@@ -16,13 +16,37 @@ jobs:
         uses: actions/checkout@v4
 
       # Use vcpkg GitHub Action to install fftw3 for windows
-      - name: Set up vcpkg
+      #- name: Set up vcpkg
+      #  if: matrix.os == 'windows-latest'
+      #  uses: lukka/run-vcpkg@v11
+      #  with:
+      #    vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+      #    vcpkgTriplet: 'x64-windows'
+      #    vcpkgArguments: 'fftw3'
+
+      # Download and extract fftw3.zip for Windows
+      - name: Download fftw3.zip
         if: matrix.os == 'windows-latest'
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgTriplet: 'x64-windows'
-          vcpkgArguments: 'fftw3'
+        run: |
+          $url = "https://fftw.org/pub/fftw/fftw-3.3.5-dll64.zip"
+          $output = "$env:RUNNER_TEMP\fftw3.zip"
+          Invoke-WebRequest -Uri $url -OutFile $output
+
+      - name: Extract fftw3.zip
+        if: matrix.os == 'windows-latest'
+        run: |
+          $zipPath = "$env:RUNNER_TEMP\fftw3.zip"
+          $extractPath = "$env:RUNNER_TEMP\fftw3"
+          Expand-Archive -Path $zipPath -DestinationPath $extractPath
+
+      - name: Set FFTW3 environment variables
+        if: matrix.os == 'windows-latest'
+        run: |
+          $extractPath = "$env:RUNNER_TEMP\fftw3"
+          $includePath = "$extractPath"
+          $libPath = "$extractPath"
+          echo "FFTW3_INCLUDE_PATH=$includePath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "FFTW3_LIB_PATH=$libPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # ------------------------------------------
       # Build Wheels Using cibuildwheel
